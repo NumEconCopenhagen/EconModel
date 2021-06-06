@@ -46,11 +46,11 @@ When the model is initialized `.settings`, `.setup` and `.allocate` are all call
 
 In `.settings()` the following internal attributes can be specified:
 
-    1. `self.savefolder = str`: Filepath to save in and load from (default: saved).
-    1. `self.namespaces = [str]`: List of namespaces available in numba and C++ functions.
-    1. `self.not_floats = [str]`: List of elements in namespaces, which are not floats (or numpy arrays).
-    1. `self.other_attrs = [str]`: List of additional attributes to be copied and saved.
-    1. `self.cpp_filename = str`: Filepath of C++ file to link to.
+1. `self.savefolder = str`: Filepath to save in and load from (default: saved).
+1. `self.namespaces = [str]`: List of namespaces available in numba and C++ functions.
+1. `self.not_floats = [str]`: List of elements in namespaces, which are not floats (or numpy arrays).
+1. `self.other_attrs = [str]`: List of additional attributes to be copied and saved.
+1. `self.cpp_filename = str`: Filepath of C++ file to link to.
 
  The namespaces `.par`, `.sim`, and `.sol` are always available.
 
