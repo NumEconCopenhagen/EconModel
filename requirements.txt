@@ -1,14 +1,7 @@
-collections
-ctypes
-impor
 numpy
 os
 pickle
-re
-setuptools
 shlex
 subprocess
-time
-types
 urllib
 zipfile
