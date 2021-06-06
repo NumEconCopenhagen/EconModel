@@ -2,11 +2,21 @@
 
 A small code library for easily working with economic models in Python with three objectives:
 
-    1. Provide standard functionality for copying, saving and loading.
-    1. Provide an easy interface to call [numba](http://numba.pydata.org/) JIT-compilled functions.
-    1. Provide an easy interface to call C++ functions.
+1. Provide standard functionality for copying, saving and loading.
+1. Provide an easy interface to call [numba](http://numba.pydata.org/) JIT-compilled functions.
+1. Provide an easy interface to call C++ functions.
 
-Examples are shown in [EconModelNotebooks](https://github.com/NumEconCopenhagen/ConsumptionSavingNotebooks).
+Examples are shown in [EconModelNotebooks](https://github.com/NumEconCopenhagen/EconModelNotebooks).
+
+# Installation
+
+The package can be installed with
+
+```
+pip install EconModel
+```
+
+# Usage
 
 **Basic usage** starts with:
 
@@ -28,9 +38,9 @@ mymodel = MyModelClass(name='mymodel')
 
 The model is **required** to have the following three methods:
 
-    1. `.settings()`: Choose fundamental settings.
-    1. `.setup()`: Set free parameters.
-    1. `.allocate()`: Set compound parameters and allocate arrays.
+1. `.settings()`: Choose fundamental settings.
+1. `.setup()`: Set free parameters.
+1. `.allocate()`: Set compound parameters and allocate arrays.
 
 When the model is initialized `.settings`, `.setup` and `.allocate` are all called (in that order). Afterwards all namespaces elements should not change type, and arrays should not change number of dimensions, though they can change shape.
 
@@ -46,10 +56,10 @@ In `.settings()` the following internal attributes can be specified:
 
  The following **standard functionality** is provided:
 
-    1. `.copy()`: Copy model.
-    1. `.save()`: Saves model in `savefolder/name`.
-    1. `.as_dict()`: Returns model packaged in a dictionary.
-    1. `.link_to_cpp()`: Compile and link to C++ file.
+1. `.copy()`: Copy model.
+1. `.save()`: Saves model in `savefolder/name`.
+1. `.as_dict()`: Returns model packaged in a dictionary.
+1. `.link_to_cpp()`: Compile and link to C++ file.
 
 A saved model can be **loaded** as:
 
@@ -78,18 +88,10 @@ with jit(mymodel) as mymodel_jit:
 mymodel.cpp.cpp_funct(mymodel.par)
 ```
 
-The libarary also contains an interface to the C++ packages:
+The libarary also contains interfaces to the C++ packages:
 
-    1. [NLopt 2.4.2](https://nlopt.readthedocs.io/en/latest/)
-    1. [Tamanian 7.0](https://github.com/ORNL/TASMANIAN/)
-
-# Installation
-
-The package can be installed with
-
-```
-pip install EconModel
-```
+1. [NLopt 2.4.2](https://nlopt.readthedocs.io/en/latest/)
+1. [Tamanian 7.0](https://github.com/ORNL/TASMANIAN/)
 
 # Development
 
