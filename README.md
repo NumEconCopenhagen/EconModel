@@ -42,7 +42,7 @@ The model is **required** to have the following three methods:
 1. `.setup()`: Set free parameters.
 1. `.allocate()`: Set compound parameters and allocate arrays.
 
-When the model is initialized `.settings`, `.setup` and `.allocate` are all called (in that order). Afterwards all namespaces elements should not change type, and arrays should not change number of dimensions, though they can change shape.
+When the model is initialized `.settings`, `.setup` and `.allocate` are all called (in that order). Afterwards all namespace elements should not change type, and arrays should not change number of dimensions, though they can change shape.
 
 In `.settings()` the following internal attributes can be specified:
 
@@ -64,8 +64,10 @@ In `.settings()` the following internal attributes can be specified:
 A saved model can be **loaded** as:
 
 ```
-mymodel = MyModelClass(name='mymodel',load=True)
+mymodel = MyModelClass(name='mymodel',load=True,skipattrs=None)
 ```
+
+Where `skipattrs [str]`  is a list of attributes to *not* load.
 
 A model can be **created from a dictionary** as:
 

@@ -19,7 +19,7 @@ from .cpptools import link_to_cpp
 # main
 class EconModelClass():
     
-    def __init__(self,name='',load=False,from_dict=None,**kwargs):
+    def __init__(self,name='',load=False,from_dict=None,skipattrs=None,**kwargs):
 
         """ defines default attributes """
 
@@ -36,7 +36,7 @@ class EconModelClass():
         # b. new or load
         self.savefolder = 'saved'
 
-        if (not load) and (from_dict is None): # new
+        if from_dict is None: # new or load
             
             # i. empty containers
             self.namespaces = []
@@ -68,18 +68,25 @@ class EconModelClass():
             assert hasattr(self,'setup'), 'the model must have defined an .setup() method'
             self.setup()
 
-            # iv. update
-            self.update(kwargs)
-            
-            # vi. allocate
-            assert hasattr(self,'allocate'), 'the model must have defined an .allocate() method'
-            self.allocate()
+            if load:
+                
+                # iv. create
+                self.allocate()
+                
+                # v. overwrite
+                self.load(skipattrs=skipattrs)
 
-        elif load: # load
-            
-            self.settings()
-            self.load()
-            self.update(kwargs)
+                # vi. update par
+                self.update(kwargs)
+
+            else:
+
+                # iv. update
+                self.update(kwargs)
+                
+                # vi. allocate
+                assert hasattr(self,'allocate'), 'the model must have defined an .allocate() method'
+                self.allocate()
 
         else:
             
@@ -166,11 +173,14 @@ class EconModelClass():
         for attr in self.all_attrs():
             if attr in model_dict:
                 if do_copy:
-                    setattr(self,attr,deepcopy(model_dict[attr]))
+                    if attr in self.namespaces and hasattr(self,attr): # element by element
+                        namespace = getattr(self,attr)
+                        for k,v in model_dict[attr].__dict__.items():
+                            namespace.__dict__[k] = deepcopy(v)
+                    else: # full copy
+                        setattr(self,attr,deepcopy(model_dict[attr]))
                 else:
                     setattr(self,attr,model_dict[attr])
-            else:
-                setattr(self,attr,None)
 
         if model_dict['link_to_cpp']: self.link_to_cpp(force_compile=False)
 
@@ -188,7 +198,7 @@ class EconModelClass():
         with open(f'{self.savefolder}/{self.name}.p', 'wb') as f:
             pickle.dump(model_dict, f)
 
-    def load(self):
+    def load(self,skipattrs=None):
         """ load the model """
 
         # a. load
@@ -197,7 +207,12 @@ class EconModelClass():
 
         self.cpp = SimpleNamespace()
         
-        # b. construct
+        # b. skip selected attributes
+        if not skipattrs is None:
+            for attr in skipattrs:
+                del model_dict[attr]
+                
+        # c. construct                
         self.from_dict(model_dict)
 
     def copy(self,name=None,**kwargs):

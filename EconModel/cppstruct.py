@@ -8,53 +8,72 @@ Functions for using dict-like objects in Python in C++.
 import ctypes as ct
 import numpy as np
 
-def get_fields(pythonobj):
+def get_fields(pythonobj,structname):
     """ construct ctypes list of fields from pythonobj
     
     Args:
     
         pythonobj: e.g. class, SimpleNamespace or namedtuple
+        structname (str): name of C++ struct
 
     Returns:
     
         ctlist (list): list of fields with elements (name,ctypes type) 
         cttxt (str): string with content of C++ struct
+        ctfuncttxt (str): dictionary with content of get_ functions to C++ struct
 
     """
 
     ctlist = []
     cttxt = ''
+    ctfunctxt = {}
 
+    # a. update function for ctfunctxt
+    def ctfunctxt_update(typename,key):
+        
+        if not typename in ctfunctxt:
+
+            typename_p = typename.replace('*','_p')
+            ctfunctxt[typename] = f'{typename} get_{typename_p}_{structname}'
+            ctfunctxt[typename] += f'({structname}* x, char* name){{\n\n'
+
+        ctfunctxt[typename] += f' if( strcmp(name,"{key}") == 0 ){{ return x->{key}; }}\n else'
+
+    # b. main
     for key,val in pythonobj.__dict__.items():
 
-        # a. scalars
+        # i. scalars
         if np.isscalar(val):
 
             if type(val) in [np.int,np.int_]:
         
                 ctlist.append((key,ct.c_long))
                 cttxt += f' int {key};\n'
+                ctfunctxt_update('int',key)
         
             elif type(val) in [np.float,np.float_]:
             
                 ctlist.append((key,ct.c_double))          
                 cttxt += f' double {key};\n'
+                ctfunctxt_update('double',key)
 
             elif type(val) is np.bool:
         
                 ctlist.append((key,ct.c_bool))
                 cttxt += f' bool {key};\n'
+                ctfunctxt_update('bool',key)
             
             elif type(val) is str:
 
                 ctlist.append((key,ct.c_char_p))
-                cttxt += f' char *{key};\n' 
+                cttxt += f' char* {key};\n' 
+                ctfunctxt_update('char*',key)
 
             else:
 
                 raise ValueError(f'unknown scalar type for {key}, type is {type(val)}')
         
-        # b. arrays
+        # ii. arrays
         else:
 
             assert hasattr(val,'dtype'), f'{key} is neither scalar nor np.array'
@@ -63,22 +82,43 @@ def get_fields(pythonobj):
 
                 ctlist.append((key,ct.POINTER(ct.c_long)))               
                 cttxt += f' int* {key};\n'
+                ctfunctxt_update('int*',key)
                      
             elif val.dtype == np.float_:
             
                 ctlist.append((key,ct.POINTER(ct.c_double)))
                 cttxt += f' double* {key};\n'
+                ctfunctxt_update('double*',key)
 
             elif val.dtype == np.bool_:
             
                 ctlist.append((key,ct.POINTER(ct.c_bool)))
                 cttxt += f' bool* {key};\n'
+                ctfunctxt_update('bool*',key)
 
             else:
                 
                 raise ValueError(f'unknown array type for {key}, dtype is {val.dtype}')
     
-    return ctlist,cttxt
+    # c. finalize ctfunctxt    
+    for typename in ctfunctxt.keys():
+
+        if typename == 'int':
+            ctfunctxt[typename] += ' {return -9999;}\n\n}\n' # for catching errors
+        elif typename == 'double':
+            ctfunctxt[typename] += ' {return NAN;}\n\n}\n'
+        elif typename == 'bool':
+            ctfunctxt[typename] += ' {return false;}\n\n}\n' # cannot catch errors
+        elif typename == 'char*':
+            ctfunctxt[typename] += ' {return NULL;}\n\n}\n'
+        elif typename == 'int*':
+            ctfunctxt[typename] += ' {return NULL;}\n\n}\n'
+        elif typename == 'double*':
+            ctfunctxt[typename] += ' {return NULL;}\n\n}\n'
+        elif typename == 'bool*':
+            ctfunctxt[typename] += ' {return NULL;}\n\n}\n'
+
+    return ctlist,cttxt,ctfunctxt
 
 def setup_struct(pythonobj,structname,structfile,do_print=False):
     """ create ctypes struct from setup_struct
@@ -90,7 +130,7 @@ def setup_struct(pythonobj,structname,structfile,do_print=False):
         strucfile (str): name of of filename for C++ struct
         do_print (bool): print contents of structs
 
-    Write strutfile with Cc++ struct called structname.
+    Write strutfile with C++ struct called structname.
 
     Returns:
 
@@ -103,11 +143,11 @@ def setup_struct(pythonobj,structname,structfile,do_print=False):
     assert type(structfile) is str
 
     # a. get fields
-    ctlist, cttxt = get_fields(pythonobj)
+    ctlist, cttxt, ctfunctxt = get_fields(pythonobj,structname)
 
     if do_print: print(cttxt)
     
-    # d. write cpp file with struct
+    # b. write cpp file with struct
     with open(structfile, 'w') as cppfile:
 
         cppfile.write(f'typedef struct {structname}\n') 
@@ -115,7 +155,10 @@ def setup_struct(pythonobj,structname,structfile,do_print=False):
         cppfile.write(cttxt)
         cppfile.write('}')
         cppfile.write(f' {structname};\n\n')
-
+        for typename in ctfunctxt.keys():
+            cppfile.write(ctfunctxt[typename])
+            cppfile.write(f'\n\n')
+        
     # c. ctypes struct
     class ctstruct(ct.Structure):
         _fields_ = ctlist
