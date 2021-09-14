@@ -41,4 +41,7 @@ class jit():
         
         del model.ns_jit
 
-        return True
+        if exc_type is None:
+            return True
+        else:
+            return False
