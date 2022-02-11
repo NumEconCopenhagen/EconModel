@@ -191,7 +191,7 @@ class link_to_cpp():
         for structname,struct in self.structsmap.items():
 
             self.structfiles[structname] = f'{self.dirname}/{structname}.cpp'
-            if do_print: print(self.structfiles[structname] + '\n')
+            if do_print: print(self.structfiles[structname])
             
             self.structs[structname] = setup_struct(struct,structname,self.structfiles[structname],do_print=do_print)
             
@@ -206,9 +206,9 @@ class link_to_cpp():
         if do_print: print('### compiling and linking ###\n')
 
         if 'dllfilename' in self.options and (not self.options['dllfilename'] is None):
-            self.dllfilename = f'{os.getcwd()}/{self.options["dllfilename"]}'
+            self.dllfilename = f'{os.getcwd()}\{self.options["dllfilename"]}'
         else:
-            self.dllfilename = f'{os.getcwd()}/{self.filename_raw}.dll'
+            self.dllfilename = f'{os.getcwd()}\{self.filename_raw}.dll'
 
         if not 'nlopt_lib' in self.options:
             self.options['nlopt_lib'] = f'{self.dirname}/nlopt-2.4.2-dll64/libnlopt-0.lib'

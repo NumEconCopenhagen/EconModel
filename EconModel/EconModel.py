@@ -20,7 +20,6 @@ from .cpptools import link_to_cpp
 class EconModelClass():
     
     def __init__(self,name='',load=False,from_dict=None,skipattrs=None,**kwargs):
-
         """ defines default attributes """
 
         if load: assert from_dict is None, 'dictionary should be be specified when loading'
@@ -40,7 +39,7 @@ class EconModelClass():
             
             # i. empty containers
             self.namespaces = []
-            self.not_floats = []
+            self.not_floats = None
             self.other_attrs = []
             self.cpp = SimpleNamespace() # overwritten later, helps linter (not internal attribute)
             self.cpp_filename = None
@@ -115,6 +114,8 @@ class EconModelClass():
     def setup_infrastructure(self):
         """ setup infrastructure to call numba jit functions """
         
+        if self.not_floats is None: return # the model is not prepared to run numba code
+
         # a. convert to dictionaries
         ns_dict = {}
         for ns in self.namespaces:
@@ -140,6 +141,8 @@ class EconModelClass():
 
     def update_jit(self):
         """ update values and references in par_jit, sol_jit, sim_jit """
+
+        if self.not_floats is None: raise ValueError('.not_floats must be specified')
 
         self.ns_jit = {}
         for ns in self.namespaces:
@@ -230,7 +233,10 @@ class EconModelClass():
         # d. fill
         other.from_dict(model_dict,do_copy=True)
         other.update(kwargs)
-        other.ns_jit_def = self.ns_jit_def
+        
+        if hasattr(self,'ns_jit_def'):
+            other.ns_jit_def = self.ns_jit_def
+
         if not type(self.cpp) is SimpleNamespace:
             other.link_to_cpp(force_compile=False)
 
@@ -289,6 +295,8 @@ class EconModelClass():
     def link_to_cpp(self,force_compile=True,do_print=False):
         """ link to C++ file """
 
+        if self.not_floats is None: raise ValueError('.not_floats must be specified')
+        
         # a. unpack
         filename = self.cpp_filename
         options = self.cpp_options

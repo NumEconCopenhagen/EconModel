@@ -3,7 +3,7 @@
 A small code library for easily working with economic models in Python with three objectives:
 
 1. Provide standard functionality for copying, saving and loading.
-1. Provide an easy interface to call [numba](http://numba.pydata.org/) JIT-compilled functions.
+1. Provide an easy interface to call [numba](http://numba.pydata.org/) JIT compilled functions.
 1. Provide an easy interface to call C++ functions.
 
 Examples are shown in [EconModelNotebooks](https://github.com/NumEconCopenhagen/EconModelNotebooks).
@@ -90,10 +90,11 @@ with jit(mymodel) as mymodel_jit:
 mymodel.cpp.cpp_funct(mymodel.par)
 ```
 
-The libarary also contains interfaces to the C++ packages:
+The libarary also contains interfaces to C++ packages such as:
 
 1. [NLopt 2.4.2](https://nlopt.readthedocs.io/en/latest/)
-1. [Tamanian 7.0](https://github.com/ORNL/TASMANIAN/)
+1. [TASMANIAN 7.0](https://github.com/ORNL/TASMANIAN/)
+1. [ALGLIB 3.17](https://www.alglib.net/)
 
 # Development
 

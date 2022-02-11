@@ -17,8 +17,7 @@ def find_vs_path():
     """ find path to visual studio """
 
     paths = [   
-        'C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/',
-        'C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Auxiliary/Build/'
+        'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/'
     ]
 
     for path in paths: 
@@ -90,20 +89,17 @@ def setup_nlopt(vs_path=None,download=True,unzip=False,folder='cppfuncs/',do_pri
 
     os.remove('compile_nlopt.bat')
 
-def setup_tasmanian(vs_path=None,download=True,unzip=False,folder='cppfuncs/',do_print=False):
-    """download and setup Tasmanian 5.1
+def setup_tasmanian(download=True,unzip=False,folder='cppfuncs/',do_print=False):
+    """download and setup Tasmanian 7.0
 
     Args:
 
-        vs_path (str,optional): path to vs compiler
         download (bool,optional): download Tasmanian 5.1
         unzip (bool,optional): unzip even if not downloaded
         folder (str,optional): folder to put Tasmanian to
         do_print (bool,optional): print progress
 
     """
-
-    vs_path = vs_path if not vs_path is None else find_vs_path()
 
     tasmanianfolder = f'{os.getcwd()}/{folder}TASMANIAN-7.0/'
     if os.path.isdir(tasmanianfolder):
@@ -119,7 +115,9 @@ def setup_tasmanian(vs_path=None,download=True,unzip=False,folder='cppfuncs/',do
     # b. unzip
     if download or unzip:
         with zipfile.ZipFile(zipfilename) as file:
-            file.extractall(f'{os.getcwd()}/{folder}')        
+            file.extractall(f'{os.getcwd()}/{folder}')       
+
+    if do_print: print('Tasmanian successfully installed') 
 
 def setup_alglib(download=True,unzip=False,folder='cppfuncs/',do_print=False):
     """download and setup ALGLIB 3.17
@@ -194,13 +192,15 @@ def set_default_options(options):
             compiler (str): compiler choice (vs or intel)
             vs_path (str): path to vs compiler 
                 (if None then newest version found is used, 
-                e.g. C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/)
+                e.g. C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/)
             intel_path (str): path to intel compiler
-            intel_vs_version (str): vs version used by intel compiler
+            flags (list[str]): list of flags (default is None)
+                vs if None: /LD /EHsc /Ox /openmp
+                intel if None: /LD /EHsc /O3 /openmp
             nlopt_lib (str): path to NLopt library 
                 (included if exists, default is cppfuncs/nlopt-2.4.2-dll64/libnlopt-0.lib)
             tasmanian_lib (str): path to Tasmanian library 
-                (included if exists, default is cppfuncs/TASMANIAN-5.1/libtasmaniansparsegrid.lib')
+                (included if exists, default is cppfuncs/TASMANIAN-7.0/lib/tasmaniansparsegrid.lib')
             additional_cpp (str): additional cpp files to include ('' default)
             dllfilename (str): filename of resulting dll file (if None (default) based on .cpp file)
             macros (dict/list): preprocessor macros
@@ -214,17 +214,18 @@ def set_default_options(options):
     else:
         options.setdefault('vs_path',None)
 
-    options.setdefault('intel_path','C:/Program Files (x86)/IntelSWTools/compilers_and_libraries_2018.5.274/windows/bin/')
-    options.setdefault('intel_vs_version','vs2017')
+    options.setdefault('intel_path','C:\Program Files (x86)\Intel\oneAPI')
+
+    options.setdefault('flags',None)
     options.setdefault('nlopt_lib','cppfuncs/nlopt-2.4.2-dll64/libnlopt-0.lib')
-    options.setdefault('tasmanian_lib','cppfuncs/TASMANIAN-5.1/libtasmaniansparsegrid.lib')
+    options.setdefault('tasmanian_lib','cppfuncs/TASMANIAN-7.0/lib/tasmaniansparsegrid.lib')
     options.setdefault('additional_cpp','')
     options.setdefault('macros',None)
     options.setdefault('dllfilename',None)
 
     assert options['compiler'] in ['vs','intel'], f'unknown compiler {options["compiler"]}'
 
-def compile(filename,options={},do_print=False):      
+def compile(filename,options=None,do_print=False):      
     """compile cpp file to dll
 
     Args:
@@ -235,6 +236,7 @@ def compile(filename,options={},do_print=False):
 
     """
     
+    if options is None: options = {}
     set_default_options(options)
 
     if options['compiler'] == 'vs' and options['vs_path'] is None:
@@ -243,7 +245,7 @@ def compile(filename,options={},do_print=False):
     compiler = options['compiler']
     vs_path = options['vs_path']
     intel_path = options['intel_path']
-    intel_vs_version = options['intel_vs_version']
+    flags = options['flags']
     nlopt_lib = options['nlopt_lib']
     tasmanian_lib = options['tasmanian_lib']
     additional_cpp = options['additional_cpp']
@@ -260,16 +262,11 @@ def compile(filename,options={},do_print=False):
     if compiler == 'vs':
         write_setup_omp()
 
-    # c. check for nlopt
-    if os.path.isfile(nlopt_lib):
-        use_nlopt = True
-    else:
-        use_nlopt = False
-
-    if os.path.isfile(tasmanian_lib):
-        use_tasmanian = True
-    else:
-        use_tasmanian = False
+    # c. check for libraries
+    nlopt_lib = f' {nlopt_lib} ' if os.path.isfile(nlopt_lib) else ''
+    tasmanian_lib = f' {tasmanian_lib} ' if os.path.isfile(tasmanian_lib) else ''
+    setup_omp = ' setup_omp.cpp' if compiler == 'vs' else ''
+    libs = f'{setup_omp}{nlopt_lib}{tasmanian_lib}{additional_cpp}'[1:]
 
     # d. compile string
     pwd_str = 'cd /d "' + os.getcwd() + '"\n'    
@@ -280,32 +277,34 @@ def compile(filename,options={},do_print=False):
         version_str = 'call vcvarsall.bat x64\n'
         
         compile_str = f'cl'
-        if use_nlopt: compile_str += f' {nlopt_lib}'
-        if use_tasmanian: compile_str += f' {tasmanian_lib}'
-
-        compile_str += f' /LD /EHsc /Ox /openmp {filename} setup_omp.cpp {additional_cpp} {add_macros(macros)}\n' 
+        flags = '/LD /EHsc /Ox /openmp' if flags is None else flags
+        compile_str += f' {flags} {filename} {libs} {add_macros(macros)}\n' 
 
         lines = [path_str,version_str,pwd_str,compile_str]
 
     elif compiler == 'intel':
         
         path_str = f'cd /d "{intel_path}"\n'
-        version_str = f'call ipsxe-comp-vars.bat intel64 {intel_vs_version}\n'
+        version_str = f'call setvars.bat\n'
         
-        compile_str = f'icl'
-        if use_nlopt: compile_str += f' {nlopt_lib}'
-        if use_tasmanian: compile_str += f' {tasmanian_lib}'
-
-        compile_str += f' /LD /EHsc /O3 /arch:CORE-AVX512 /openmp {filename} {additional_cpp} {add_macros(macros)}\n' 
+        compile_str = f'icx'
+        flags = '/LD /EHsc /O3 /openmp' if flags is None else flags
+        compile_str += f' {flags} {filename} {libs} {add_macros(macros)}\n' 
 
     lines = [path_str,version_str,pwd_str,compile_str]
         
+    if do_print: 
+        print('compile.bat:')
+        for line in lines: print(line,end='')
+        print('')
+
     # e. write .bat
     with open('compile.bat', 'w') as txtfile:
         txtfile.writelines(lines)
                                
     # f. compile
     result = os.system('compile.bat')
+
     if compiler == 'vs': 
         os.remove(f'setup_omp.cpp')
         os.remove(f'setup_omp.obj')
@@ -329,6 +328,5 @@ def compile(filename,options={},do_print=False):
         os.remove(f'{filename_raw}.lib')
         os.remove(f'{filename_raw}.exp')    
     elif compiler == 'intel':
-        os.remove(f'{filename_raw}.obj')
         os.remove(f'{filename_raw}.lib')
         os.remove(f'{filename_raw}.exp')
