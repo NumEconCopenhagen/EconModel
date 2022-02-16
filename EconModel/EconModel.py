@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Model
+""" EconModelClass
 
 Provides a class for consumption-saving models with methods for saving and loading
 and interfacing with numba jitted functions and C++.
@@ -19,7 +19,7 @@ from .cpptools import link_to_cpp
 # main
 class EconModelClass():
     
-    def __init__(self,name='',load=False,from_dict=None,skipattrs=None,**kwargs):
+    def __init__(self,name='',load=False,from_dict=None,skip=None,**kwargs):
         """ defines default attributes """
 
         if load: assert from_dict is None, 'dictionary should be be specified when loading'
@@ -29,7 +29,7 @@ class EconModelClass():
 
         # list of internal of attributes (used when saving)
         self.internal_attrs = [
-            'savefolder','namespaces','not_floats','other_attrs',
+            'savefolder','namespaces','other_attrs',
             'cpp_filename','cpp_options','cpp_structsmap']
 
         # b. new or load
@@ -39,7 +39,6 @@ class EconModelClass():
             
             # i. empty containers
             self.namespaces = []
-            self.not_floats = None
             self.other_attrs = []
             self.cpp = SimpleNamespace() # overwritten later, helps linter (not internal attribute)
             self.cpp_filename = None
@@ -73,15 +72,15 @@ class EconModelClass():
                 self.allocate()
                 
                 # v. overwrite
-                self.load(skipattrs=skipattrs)
+                self.load(skip=skip)
 
                 # vi. update par
-                self.update(kwargs)
+                self.__update(kwargs)
 
             else:
 
                 # iv. update
-                self.update(kwargs)
+                self.__update(kwargs)
                 
                 # vi. allocate
                 assert hasattr(self,'allocate'), 'the model must have defined an .allocate() method'
@@ -92,12 +91,12 @@ class EconModelClass():
             self.from_dict(from_dict)
 
         # c. infrastructure
-        self.setup_infrastructure()
+        self.infer_types()
     
     def __name__(self):
         return 'EconModelClass' 
 
-    def update(self,upd_dict):
+    def __update(self,upd_dict):
         """ update """
 
         for nskey,values in upd_dict.items():
@@ -111,57 +110,74 @@ class EconModelClass():
     ## infrastructure ##
     ####################
 
-    def setup_infrastructure(self):
+    def infer_types(self):
         """ setup infrastructure to call numba jit functions """
         
-        if self.not_floats is None: return # the model is not prepared to run numba code
+        _ns_specs = self._ns_specs = {}
+        _ns_namedtuple = _ns_specs['namedtuple'] = {}
+        _ns_keys = _ns_specs['keys'] = {}
+        _ns_types = _ns_specs['types'] = {}
+        _ns_np_dtypes = _ns_specs['np_dtypes'] = {}
+        _ns_np_ndims = _ns_specs['np_ndims'] = {}
 
-        # a. convert to dictionaries
-        ns_dict = {}
+        def create_type_list(value):
+
+            type_ = type(value)
+            if type_ in [float,np.float_]:
+                return [float,np.float_]
+            elif type_ in [int,np.int_]:
+                return [int,np.int_]                
+            else:
+                return [type_]
+
         for ns in self.namespaces:
-            ns_dict[ns] = getattr(self,ns).__dict__
+            ns_dict = getattr(self,ns).__dict__
+            _ns_namedtuple[ns] = namedtuple(f'{ns.capitalize()}Class',[key for key in ns_dict.keys()])
+            _ns_keys[ns] = [key for key in ns_dict.keys()]
+            _ns_types[ns] = {key:create_type_list(value) for key,value in ns_dict.items()}
+            _ns_np_dtypes[ns] = {key:value.dtype for key,value in ns_dict.items() if type(value) == np.ndarray}
+            _ns_np_ndims[ns] = {key:value.ndim for key,value in ns_dict.items() if type(value) == np.ndarray}
 
-        # b. type check
-        def check(key,val):
+    def check_types(self):
+        """ check everything is unchanged since initialization """
 
-            _scalar_or_ndarray = np.isscalar(val) or type(val) is np.ndarray or type(val) is np.memmap
-            assert _scalar_or_ndarray, f'{key} is not scalar or numpy arraym but {type(val)}'
+        for ns in self.namespaces:
             
-            _non_float = not np.isscalar(val) or type(val) is str or type(val) is np.float or type(val) is np.float64 or key in self.not_floats
-            assert _non_float, f'{key} is {type(val)}, not float, but not on the list'
-
-        for ns in self.namespaces:
-            for key,val in ns_dict[ns].items():
-                check(key,val)
-
-        # c. namedtuple (definitions)
-        self.ns_jit_def = {}
-        for ns in self.namespaces:
-            self.ns_jit_def[ns] = namedtuple(f'{ns.capitalize()}Class',[key for key in ns_dict[ns].keys()])
+            for key,value in getattr(self,ns).__dict__.items():
+                if not key in self._ns_specs['keys'][ns]: raise ValueError(f'{key} is not allowed in .{ns}')
+                allowed_types = self._ns_specs['types'][ns][key]
+                if not type(value) in allowed_types: raise ValueError(f'{ns}.{key} has type {type(value)}, should be in {allowed_types}')
+                if type(value) == np.ndarray:
+                    allowed_dtype = self._ns_specs['np_dtypes'][ns][key]
+                    allowed_ndim = self._ns_specs['np_ndims'][ns][key]
+                    if not value.dtype == allowed_dtype: raise ValueError(f'{ns}.{key} has dtype {value.dtype}, should be {allowed_dtype}')
+                    if not value.ndim == allowed_ndim: raise ValueError(f'{ns}.{key} has ndim {value.ndim}, should be {allowed_ndim}')
 
     def update_jit(self):
-        """ update values and references in par_jit, sol_jit, sim_jit """
+        """ create namedtuples for jit """
 
-        if self.not_floats is None: raise ValueError('.not_floats must be specified')
+        self.check_types()
 
-        self.ns_jit = {}
+        self._ns_jit = {}
         for ns in self.namespaces:
-            self.ns_jit[ns] = self.ns_jit_def[ns](**getattr(self,ns).__dict__)
+            self._ns_jit[ns] = self._ns_specs['namedtuple'][ns](**getattr(self,ns).__dict__)
 
     ####################
     ## save-copy-load ##
     ####################
     
-    def all_attrs(self):
+    def __all_attrs(self):
         """ return all attributes """
 
         return self.namespaces + self.other_attrs + self.internal_attrs
 
-    def as_dict(self,drop=[]):
+    def as_dict(self,drop=None):
         """ return a dict version of the model """
         
+        drop = [] if drop is None else drop
+
         model_dict = {}
-        for attr in self.all_attrs():
+        for attr in self.__all_attrs():
             if not attr in drop: model_dict[attr] = getattr(self,attr)
 
         model_dict['link_to_cpp'] = not type(self.cpp) is SimpleNamespace
@@ -173,7 +189,7 @@ class EconModelClass():
 
         self.namespaces = model_dict['namespaces']
         self.other_attrs = model_dict['other_attrs']
-        for attr in self.all_attrs():
+        for attr in self.__all_attrs():
             if attr in model_dict:
                 if do_copy:
                     if attr in self.namespaces and hasattr(self,attr): # element by element
@@ -185,7 +201,10 @@ class EconModelClass():
                 else:
                     setattr(self,attr,model_dict[attr])
 
-        if model_dict['link_to_cpp']: self.link_to_cpp(force_compile=False)
+        if model_dict['link_to_cpp']: 
+            self.link_to_cpp(force_compile=False,check=False)
+        else:
+            self.cpp = SimpleNamespace()            
 
     def save(self,drop=[]):
         """ save the model """
@@ -201,7 +220,7 @@ class EconModelClass():
         with open(f'{self.savefolder}/{self.name}.p', 'wb') as f:
             pickle.dump(model_dict, f)
 
-    def load(self,skipattrs=None):
+    def load(self,skip=None):
         """ load the model """
 
         # a. load
@@ -211,8 +230,8 @@ class EconModelClass():
         self.cpp = SimpleNamespace()
         
         # b. skip selected attributes
-        if not skipattrs is None:
-            for attr in skipattrs:
+        if not skip is None:
+            for attr in skip:
                 del model_dict[attr]
                 
         # c. construct                
@@ -232,13 +251,14 @@ class EconModelClass():
 
         # d. fill
         other.from_dict(model_dict,do_copy=True)
-        other.update(kwargs)
+        other.__update(kwargs)
         
-        if hasattr(self,'ns_jit_def'):
-            other.ns_jit_def = self.ns_jit_def
+        if hasattr(self,'_ns_specs'): other._ns_specs = self._ns_specs
 
         if not type(self.cpp) is SimpleNamespace:
             other.link_to_cpp(force_compile=False)
+        else:
+            other.cpp = SimpleNamespace()
 
         return other
 
@@ -279,7 +299,7 @@ class EconModelClass():
         description += 'namespaces: ' + str(self.namespaces) + '\n'
         description += 'other_attrs: ' + str(self.other_attrs) + '\n'
         description += 'savefolder: ' + str(self.savefolder) + '\n'
-        description += 'not_floats: ' + str(self.not_floats) + '\n'
+        description += 'cpp_filename: ' + str(self.cpp_filename) + '\n'
 
         for ns in self.namespaces:
             description += '\n'
@@ -292,10 +312,10 @@ class EconModelClass():
     ## interact with cpp ##
     #######################
 
-    def link_to_cpp(self,force_compile=True,do_print=False):
+    def link_to_cpp(self,force_compile=True,use_log=True,do_print=False):
         """ link to C++ file """
 
-        if self.not_floats is None: raise ValueError('.not_floats must be specified')
+        self.check_types()
         
         # a. unpack
         filename = self.cpp_filename
@@ -312,7 +332,7 @@ class EconModelClass():
 
         # b. link to C++
         self.cpp = link_to_cpp(filename,force_compile=force_compile,options=options,
-            structsmap=structsmap,do_print=do_print)
+            structsmap=structsmap,use_log=use_log,do_print=do_print)
 
     ############
     # clean-up #

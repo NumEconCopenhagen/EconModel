@@ -23,7 +23,7 @@ class jit():
         model = self.model
         model.update_jit()
         for ns in model.namespaces:
-            jit = model.ns_jit[ns]
+            jit = model._ns_jit[ns]
             setattr(model,ns,jit)
 
         return model
@@ -39,7 +39,7 @@ class jit():
             normal = getattr(self,ns)
             setattr(model,ns,normal)
         
-        del model.ns_jit
+        del model._ns_jit
 
         if exc_type is None:
             return True

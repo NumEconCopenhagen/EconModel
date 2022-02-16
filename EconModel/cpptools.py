@@ -138,7 +138,7 @@ def analyze_cpp(funcs,filename,structnames=[],do_print=False):
 class link_to_cpp():
 
     def __init__(self,filename,force_compile=True,structsmap={},
-                      options={},do_print=False):
+                      options={},use_log=True,print_log=True,do_print=False):
         """ link to C++ file
 
         Args:
@@ -147,6 +147,8 @@ class link_to_cpp():
             force_compile (bool,optional): compile even if .dll is present
             structsmap (dict,optional): struct names as keys and associated pythonobj used in C++ as values
             options (dict,optional): compiler options
+            use_log (bool,optional): assumes log is printed to filename.log (deleted afterwards) (saved in self.log[funcname])
+            print_log (bool,optional): print log to screen when function is called
             do_print (bool,optional): print progress
 
         """
@@ -163,6 +165,9 @@ class link_to_cpp():
         # b. options
         self.structsmap = structsmap 
         self.options = options
+        self.use_log = use_log
+        self.print_log = print_log
+        self.log = {}
         
         self.compile(force_compile=force_compile,do_print=do_print)
 
@@ -244,17 +249,17 @@ class link_to_cpp():
         if do_tasmanian: self.delink(cppfile=tasmanianfile,do_print=False)
 
         # set types
-        self.set_types()
+        self.__set_types()
         if do_print: print('C++ files loaded\n')
 
         # f. function call method
-        def call_func(name): return lambda *x: self.call_func(name,*x)
+        def __call_func(name): return lambda *x: self.__call_func(name,*x)
         for funcname in self.funcs.keys():
-            setattr(self,funcname,call_func(funcname))
+            setattr(self,funcname,__call_func(funcname))
 
         if do_print: print('DONE!\n')
 
-    def set_types(self):
+    def __set_types(self):
         """ set types for return and arguments for all functions """
 
         for funcname,(argtypes_raw,restype_raw) in self.funcs.items():
@@ -328,7 +333,7 @@ class link_to_cpp():
         
         if do_print: print('C++ files delinked')
 
-    def recompile(self,force_compile=True,do_print=False):
+    def recompile(self,force_compile=True,use_log=True,print_log=True,do_print=False):
         """ re-compile and link to C++ file
 
         Args:
@@ -338,6 +343,9 @@ class link_to_cpp():
 
         """
 
+        self.use_log = use_log
+        self.print_log = print_log
+
         self.delink()
         self.compile(force_compile=force_compile,do_print=do_print)
 
@@ -345,7 +353,7 @@ class link_to_cpp():
     # calling functions #
     #####################
     
-    def get_p_args(self,funcname,args):
+    def __get_p_args(self,funcname,args):
         """ get pointers to arguments """
 
         p_args = []
@@ -370,7 +378,7 @@ class link_to_cpp():
 
         return p_args
 
-    def call_func(self,funcname,*args):
+    def __call_func(self,funcname,*args):
         """ call function 
         
         Args:
@@ -384,19 +392,36 @@ class link_to_cpp():
 
         """
         
-        try:
+        for n in range(2):
 
-            p_args = self.get_p_args(funcname,args)
-            funcnow = getattr(self.cppfile,funcname)
-            return funcnow(*p_args)
+            try:
 
-        except:
+                p_args = self.__get_p_args(funcname,args)
+                funcnow = getattr(self.cppfile,funcname)
+                result = funcnow(*p_args)
+                break
 
-            self.compile(force_compile=False) # re-linking might solve the problem
+            except:
 
-            p_args = self.get_p_args(funcname,args)
-            funcnow = getattr(self.cppfile,funcname)
-            return funcnow(*p_args)
+                if n == 0: self.compile(force_compile=False) # re-linking might solve the problem
+
+        # print log
+        if self.use_log:
+
+            log_filename = f'{self.filename_raw}.log'
+            if os.path.isfile(log_filename):
+
+                self.log[funcname] = ''
+                with open(log_filename,'r') as file:
+                    for line in file.readlines():
+                        if self.print_log: print(line,end='')
+                        self.log[funcname] += line
+            
+                os.remove(log_filename)
+
+        # return
+        return result
+
 
     ############
     # clean up #

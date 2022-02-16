@@ -8,6 +8,7 @@ Functions for compiling C++ files to use in Python.
 import os
 import zipfile
 import urllib.request
+from subprocess import PIPE, run
 
 ############
 # auxilary #
@@ -23,7 +24,7 @@ def find_vs_path():
     for path in paths: 
         if os.path.isdir(path): return path
 
-    raise Exception('no Visual Studio installation found')
+    raise RuntimeError('no Visual Studio installation found')
 
 def write_setup_omp():
     """ write C++ file to setup OpenMP with Visual Studio """
@@ -55,7 +56,7 @@ def setup_nlopt(vs_path=None,download=True,unzip=False,folder='cppfuncs/',do_pri
 
     nloptfolder = f'{folder}nlopt-2.4.2-dll64/'
     if os.path.isdir(nloptfolder):
-        if do_print: print('nlopt already installed')
+        if do_print: print('NLopt already installed')
         return
 
     # a. download
@@ -75,26 +76,35 @@ def setup_nlopt(vs_path=None,download=True,unzip=False,folder='cppfuncs/',do_pri
     version_str = 'call vcvarsall.bat x64\n'
     setup_str = 'lib /def:libnlopt-0.def /machine:x64'
     
-    # d. write .bat
     lines = [path_str,version_str,pwd_str,setup_str]
+
+    if do_print: 
+        print('compile.bat:')
+        for line in lines: print(line,end='')
+
+    # d. write .bat
     with open('compile_nlopt.bat', 'w') as txtfile:
         txtfile.writelines(lines)
 
     # e. call .bat
-    result = os.system('compile_nlopt.bat')
-    if result == 0:
-        if do_print: print('nlopt successfully installed')
-    else: 
-        raise ValueError('nlopt installation failed')
-
-    os.remove('compile_nlopt.bat')
+    result = run('compile_nlopt.bat',stdout=PIPE,stderr=PIPE,universal_newlines=True,shell=True)
+    if result.returncode == 0:
+        if do_print: 
+            print('terminal:')
+            print(result.stdout)
+            print('C++ files compiled')
+        if do_print: print('NLopt successfully installed')
+    else:
+        print('terminal:')
+        print(result.stdout)
+        raise RuntimeError('NLopt installation failed')
 
 def setup_tasmanian(download=True,unzip=False,folder='cppfuncs/',do_print=False):
     """download and setup Tasmanian 7.0
 
     Args:
 
-        download (bool,optional): download Tasmanian 5.1
+        download (bool,optional): download Tasmanian 7.0
         unzip (bool,optional): unzip even if not downloaded
         folder (str,optional): folder to put Tasmanian to
         do_print (bool,optional): print progress
@@ -103,7 +113,7 @@ def setup_tasmanian(download=True,unzip=False,folder='cppfuncs/',do_print=False)
 
     tasmanianfolder = f'{os.getcwd()}/{folder}TASMANIAN-7.0/'
     if os.path.isdir(tasmanianfolder):
-        if do_print: print('Tasmanian already installed')
+        if do_print: print('TASMANIAN already installed')
         return
 
     # a. download
@@ -117,7 +127,7 @@ def setup_tasmanian(download=True,unzip=False,folder='cppfuncs/',do_print=False)
         with zipfile.ZipFile(zipfilename) as file:
             file.extractall(f'{os.getcwd()}/{folder}')       
 
-    if do_print: print('Tasmanian successfully installed') 
+    if do_print: print('TASMANIAN successfully installed') 
 
 def setup_alglib(download=True,unzip=False,folder='cppfuncs/',do_print=False):
     """download and setup ALGLIB 3.17
@@ -303,16 +313,23 @@ def compile(filename,options=None,do_print=False):
         txtfile.writelines(lines)
                                
     # f. compile
-    result = os.system('compile.bat')
+    result = run('compile.bat',stdout=PIPE,stderr=PIPE,universal_newlines=True,shell=True)
 
     if compiler == 'vs': 
         os.remove(f'setup_omp.cpp')
         os.remove(f'setup_omp.obj')
 
-    if result == 0:
-        if do_print: print('C++ files compiled')
+    if result.returncode == 0:
+        if do_print: 
+            print('terminal:')
+            print(result.stdout)
+            print(result.stderr)
+            print('C++ files compiled')
     else: 
-        raise Exception('C++ files can not be compiled')
+        print('terminal:')
+        print(result.stdout)
+        print(result.stderr)
+        raise RuntimeError('C++ files can not be compiled')
 
     # g. rename dll
     filename_raw = os.path.splitext(basename)[0]
