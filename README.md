@@ -94,6 +94,8 @@ The libarary also contains interfaces to C++ packages such as:
 1. [NLopt 2.4.2](https://nlopt.readthedocs.io/en/latest/)
 1. [TASMANIAN 7.0](https://github.com/ORNL/TASMANIAN/)
 1. [ALGLIB 3.17](https://www.alglib.net/)
+1. [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
+1. [autodiff](https://autodiff.github.io/)
 
 # Development
 
