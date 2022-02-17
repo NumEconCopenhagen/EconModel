@@ -6,6 +6,7 @@ Functions for compiling C++ files to use in Python.
 """
 
 import os
+import shutil
 import zipfile
 import urllib.request
 from subprocess import PIPE, run
@@ -136,7 +137,7 @@ def setup_alglib(download=True,unzip=False,folder='cppfuncs/',do_print=False):
 
         download (bool,optional): download ALGLIB 3.17
         unzip (bool,optional): unzip even if not downloaded
-        folder (str,optional): folder to put Tasmanian to
+        folder (str,optional): folder to put ALGLIB to
         do_print (bool,optional): print progress
 
     """
@@ -157,6 +158,80 @@ def setup_alglib(download=True,unzip=False,folder='cppfuncs/',do_print=False):
             file.extractall(f'{os.getcwd()}/{folder}alglib-3.17.0')
 
     if do_print: print('alglib succesfully installed')
+
+def setup_autodiff(download=True,unzip=False,folder='cppfuncs/',do_print=False):
+    """download and setup autodiff
+
+    Args:
+
+        download (bool,optional): download autodiff
+        unzip (bool,optional): unzip even if not downloaded
+        folder (str,optional): folder to put autodiff to
+        do_print (bool,optional): print progress
+
+    """
+
+    if os.path.isdir(f'{os.getcwd()}/{folder}autodiff'):
+        if do_print: print('autodiff already installed')
+        return
+
+    # a. download
+    zipfilename = os.path.abspath(f'{os.getcwd()}/{folder}autodiff-master.zip')
+    if download:
+        url = 'https://github.com/autodiff/autodiff/archive/refs/heads/master.zip'
+        urllib.request.urlretrieve(url,zipfilename)
+        
+    # b. unzip
+    if download or unzip:
+        with zipfile.ZipFile(zipfilename) as file:
+            file.extractall(f'{os.getcwd()}/{folder}')
+        
+    # c. move
+    src = f'{os.getcwd()}/{folder}/autodiff-master/autodiff'
+    dst = f'{os.getcwd()}/{folder}/autodiff'
+    shutil.move(src,dst)
+
+    # d. clean
+    shutil.rmtree(f'{os.getcwd()}/{folder}/autodiff-master/')
+
+    if do_print: print('autodiff succesfully installed')
+
+def setup_Eigen(download=True,unzip=False,folder='cppfuncs/',do_print=False):
+    """download and setup autodiff
+
+    Args:
+
+        download (bool,optional): download Eigen 3.4.0
+        unzip (bool,optional): unzip even if not downloaded
+        folder (str,optional): folder to put Eigen to
+        do_print (bool,optional): print progress
+
+    """
+
+    if os.path.isdir(f'{os.getcwd()}/{folder}Eigen'):
+        if do_print: print('Eigen already installed')
+        return
+
+    # a. download
+    zipfilename = os.path.abspath(f'{os.getcwd()}/{folder}Eigen-master.zip')
+    if download:
+        url = 'https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip'
+        urllib.request.urlretrieve(url,zipfilename)
+        
+    # b. unzip
+    if download or unzip:
+        with zipfile.ZipFile(zipfilename) as file:
+            file.extractall(f'{os.getcwd()}/{folder}')
+        
+    # c. move
+    src = f'{os.getcwd()}/{folder}/eigen-3.4.0/Eigen'
+    dst = f'{os.getcwd()}/{folder}/Eigen'
+    shutil.move(src,dst)
+
+    # d. clean
+    shutil.rmtree(f'{os.getcwd()}/{folder}/eigen-3.4.0')
+
+    if do_print: print('Eigen succesfully installed')
 
 def add_macros(macros):
     """ add macros to compile string

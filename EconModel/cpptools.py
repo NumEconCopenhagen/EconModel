@@ -10,7 +10,9 @@ import ctypes as ct
 import re
 import numpy as np
 
-from .cppcompile import compile, set_default_options, setup_nlopt, setup_tasmanian, setup_alglib
+from.cppcompile import setup_nlopt, setup_tasmanian, setup_alglib, setup_autodiff, setup_Eigen
+
+from .cppcompile import compile, set_default_options
 from .cppstruct import setup_struct, get_struct_pointer
 
 #################
@@ -147,7 +149,7 @@ class link_to_cpp():
             force_compile (bool,optional): compile even if .dll is present
             structsmap (dict,optional): struct names as keys and associated pythonobj used in C++ as values
             options (dict,optional): compiler options
-            use_log (bool,optional): assumes log is printed to filename.log (deleted afterwards) (saved in self.log[funcname])
+            use_log (bool,optional): assumes log is printed to filename.log (deleted afterwards, saved in self.log[funcname])
             print_log (bool,optional): print log to screen when function is called
             do_print (bool,optional): print progress
 
@@ -401,9 +403,10 @@ class link_to_cpp():
                 result = funcnow(*p_args)
                 break
 
-            except:
+            except Exception as e:
 
                 if n == 0: self.compile(force_compile=False) # re-linking might solve the problem
+                if n == 1: print(e) # print error message
 
         # print log
         if self.use_log:
