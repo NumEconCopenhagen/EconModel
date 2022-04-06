@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ EconModelClass
 
-Provides a class for consumption-saving models with methods for saving and loading
+Provides a class for economic models with methods for saving and loading
 and interfacing with numba jitted functions and C++.
 
 """
@@ -53,14 +53,14 @@ class EconModelClass():
             for attr in self.other_attrs:
                 if not hasattr(self,attr): setattr(self,attr,None)
 
-            self.par = SimpleNamespace() # -> helps linter
-            self.sol = SimpleNamespace() # -> helps linter
-            self.sim = SimpleNamespace() # -> helps linter
-
-            for ns in self.namespaces:
-                setattr(self,ns,SimpleNamespace())
-
-            self.namespaces = list(set(self.namespaces + ['par','sol','sim']))
+            if len(self.namespaces) == 0:
+                self.namespaces =  ['par','sol','sim']
+                self.par = SimpleNamespace() # -> helps linter
+                self.sol = SimpleNamespace() # -> helps linter
+                self.sim = SimpleNamespace() # -> helps linter
+            else:
+                for ns in self.namespaces:
+                    setattr(self,ns,SimpleNamespace())
 
             # iii setup
             assert hasattr(self,'setup'), 'the model must have defined an .setup() method'
