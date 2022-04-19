@@ -202,7 +202,7 @@ class EconModelClass():
                     setattr(self,attr,model_dict[attr])
 
         if model_dict['link_to_cpp']: 
-            self.link_to_cpp(force_compile=False,check=False)
+            self.link_to_cpp(force_compile=False)
         else:
             self.cpp = SimpleNamespace()            
 
