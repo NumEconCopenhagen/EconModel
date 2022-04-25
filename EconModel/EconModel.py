@@ -206,8 +206,10 @@ class EconModelClass():
         else:
             self.cpp = SimpleNamespace()            
 
-    def save(self,drop=[]):
+    def save(self,drop=None):
         """ save the model """
+
+        if drop is None: drop = []
 
         # a. ensure path        
         if not os.path.exists(self.savefolder):
