@@ -80,7 +80,7 @@ class EconModelClass():
             else:
 
                 # iv. update
-                self.__update(kwargs)
+                self.__update(kwargs,allow_new_keys=True)
                 
                 # vi. allocate
                 assert hasattr(self,'allocate'), 'the model must have defined an .allocate() method'
@@ -96,14 +96,14 @@ class EconModelClass():
     def __name__(self):
         return 'EconModelClass' 
 
-    def __update(self,upd_dict):
+    def __update(self,upd_dict,allow_new_keys=False):
         """ update """
 
         for nskey,values in upd_dict.items():
             assert nskey in self.namespaces, f'{nskey} is not a namespace'
             assert type(values) is dict, f'{nskey} must be dict'
             for key,value in values.items():
-                assert hasattr(getattr(self,nskey),key), f'{key} is not in {nskey}' 
+                if not allow_new_keys: assert hasattr(getattr(self,nskey),key), f'{key} is not in {nskey}' 
                 setattr(getattr(self,nskey),key,value)        
 
     ####################
