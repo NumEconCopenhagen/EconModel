@@ -106,3 +106,9 @@ To develop the package follow these steps:
 4. Run `pip install -e .`
 
 Changes you make to the package is now immediately effective on your own computer. 
+
+# Usage
+
+1. [ConSav](https://github.com/NumEconCopenhagen/ConsumptionSaving) for consumption-saving models.
+1. [GEModelTools](https://github.com/NumEconCopenhagen/GEModelTools) for general equilibrium models.
+1. [BabyMAKRO](https://github.com/JeppeDruedahl/BabyMAKRO) for policy-like model for teaching.
