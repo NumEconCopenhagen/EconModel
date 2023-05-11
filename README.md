@@ -107,7 +107,7 @@ To develop the package follow these steps:
 
 Changes you make to the package is now immediately effective on your own computer. 
 
-# Usage
+# Used by
 
 1. [ConSav](https://github.com/NumEconCopenhagen/ConsumptionSaving) for consumption-saving models.
 1. [GEModelTools](https://github.com/NumEconCopenhagen/GEModelTools) for general equilibrium models.
