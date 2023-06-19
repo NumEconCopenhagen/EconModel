@@ -100,6 +100,8 @@ def setup_nlopt(vs_path=None,download=True,unzip=False,folder='cppfuncs/',do_pri
         print(result.stdout)
         raise RuntimeError('NLopt installation failed')
 
+    os.remove('compile_nlopt.bat')
+
 def setup_tasmanian(download=True,unzip=False,folder='cppfuncs/',do_print=False):
     """download and setup Tasmanian 7.0
 
