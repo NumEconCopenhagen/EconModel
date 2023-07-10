@@ -57,7 +57,7 @@ def get_fields(pythonobj,structname):
                 cttxt += f' double {key};\n'
                 ctfunctxt_update('double',key)
 
-            elif type(val) is np.bool:
+            elif type(val) is np.bool_:
         
                 ctlist.append((key,ct.c_bool))
                 cttxt += f' bool {key};\n'
