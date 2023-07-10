@@ -279,9 +279,9 @@ class EconModelClass():
 
             for key,val in sn.__dict__.items():
 
-                if np.isscalar(val) and not type(val) is np.bool:
+                if np.isscalar(val) and not type(val) is np.bool_:
                     description += f' {key} = {val} [{type(val).__name__}]\n'
-                elif type(val) is np.bool:
+                elif type(val) is np.bool_:
                     if val:
                         description += f' {key} = True\n'
                     else:
