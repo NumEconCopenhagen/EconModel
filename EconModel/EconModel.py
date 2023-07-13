@@ -239,7 +239,7 @@ class EconModelClass():
         # c. construct                
         self.from_dict(model_dict)
 
-    def copy(self,name=None,**kwargs):
+    def copy(self,name=None):
         """ copy the model """
         
         # a. name
@@ -253,9 +253,7 @@ class EconModelClass():
 
         # d. fill
         other.from_dict(model_dict,do_copy=True)
-        other.__update(kwargs)
-        
-        if hasattr(self,'_ns_specs'): other._ns_specs = self._ns_specs
+        other._ns_specs = self._ns_specs # same jit can be used
 
         if not type(self.cpp) is SimpleNamespace:
             other.link_to_cpp(force_compile=False)
@@ -287,7 +285,12 @@ class EconModelClass():
                     else:
                         description += f' {key} = False\n'
                 elif type(val) is np.ndarray:
-                    description += f' {key} = ndarray with shape = {val.shape} [dtype: {val.dtype}]\n'            
+                    if val.nbytes > 0.5*10**9:
+                        memstr = f'{val.nbytes/10**9:.1f} gb'
+                    else:
+                        memstr = f'{val.nbytes/10**6:.1f} mb'
+
+                    description += f' {key} = ndarray[{val.dtype}] with shape = {val.shape} [{memstr}]\n'            
                     nbytes += val.nbytes
                 else:                
                     description += f' {key} = ?\n'
