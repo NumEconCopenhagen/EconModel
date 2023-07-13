@@ -178,9 +178,9 @@ def setup_autodiff(download=True,unzip=False,folder='cppfuncs/',do_print=False):
         return
 
     # a. download
-    zipfilename = os.path.abspath(f'{os.getcwd()}/{folder}autodiff-master.zip')
+    zipfilename = os.path.abspath(f'{os.getcwd()}/{folder}autodiff-main.zip')
     if download:
-        url = 'https://github.com/autodiff/autodiff/archive/refs/heads/master.zip'
+        url = 'https://github.com/autodiff/autodiff/archive/refs/heads/main.zip'
         urllib.request.urlretrieve(url,zipfilename)
         
     # b. unzip
@@ -189,12 +189,12 @@ def setup_autodiff(download=True,unzip=False,folder='cppfuncs/',do_print=False):
             file.extractall(f'{os.getcwd()}/{folder}')
         
     # c. move
-    src = f'{os.getcwd()}/{folder}/autodiff-master/autodiff'
+    src = f'{os.getcwd()}/{folder}/autodiff-main/autodiff'
     dst = f'{os.getcwd()}/{folder}/autodiff'
     shutil.move(src,dst)
 
     # d. clean
-    shutil.rmtree(f'{os.getcwd()}/{folder}/autodiff-master/')
+    shutil.rmtree(f'{os.getcwd()}/{folder}/autodiff-main/')
 
     if do_print: print('autodiff succesfully installed')
 
@@ -215,7 +215,7 @@ def setup_Eigen(download=True,unzip=False,folder='cppfuncs/',do_print=False):
         return
 
     # a. download
-    zipfilename = os.path.abspath(f'{os.getcwd()}/{folder}Eigen-master.zip')
+    zipfilename = os.path.abspath(f'{os.getcwd()}/{folder}Eigen-main.zip')
     if download:
         url = 'https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.zip'
         urllib.request.urlretrieve(url,zipfilename)

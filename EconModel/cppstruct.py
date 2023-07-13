@@ -45,19 +45,19 @@ def get_fields(pythonobj,structname):
         # i. scalars
         if np.isscalar(val):
 
-            if type(val) in [np.int,np.int_]:
+            if type(val) in [int,np.int_]:
         
                 ctlist.append((key,ct.c_long))
                 cttxt += f' int {key};\n'
                 ctfunctxt_update('int',key)
         
-            elif type(val) in [np.float,np.float_]:
+            elif type(val) in [float,np.float_]:
             
                 ctlist.append((key,ct.c_double))          
                 cttxt += f' double {key};\n'
                 ctfunctxt_update('double',key)
 
-            elif type(val) is np.bool_:
+            elif type(val) in [bool,np.bool_]:
         
                 ctlist.append((key,ct.c_bool))
                 cttxt += f' bool {key};\n'
