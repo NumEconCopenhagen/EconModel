@@ -295,7 +295,11 @@ class EconModelClass():
                 else:                
                     description += f' {key} = ?\n'
 
-            description += f' memory, gb: {nbytes/(10**9):.1f}\n' 
+            if nbytes < 0.5*10**9:
+                description += f' memory: {nbytes/(10**6):.1f} mb\n' 
+            else:
+                description += f' memory: {nbytes/(10**9):.1f} gb\n' 
+            
             return description
 
         description = f'Modelclass: {self.__class__.__name__}\n'
