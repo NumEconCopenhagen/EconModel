@@ -146,7 +146,8 @@ class EconModelClass():
             for key,value in getattr(self,ns).__dict__.items():
                 if not key in self._ns_specs['keys'][ns]: raise ValueError(f'{key} is not allowed in .{ns}')
                 allowed_types = self._ns_specs['types'][ns][key]
-                if not type(value) in allowed_types: raise ValueError(f'{ns}.{key} has type {type(value)}, should be in {allowed_types}')
+                allowed_types_str = [str(k)[8:-2] for k in self._ns_specs['types'][ns][key]] 
+                if not type(value) in allowed_types: raise ValueError(f'{ns}.{key} has type {str(type(value))[8:-2]}, should be in {allowed_types_str}')
                 if type(value) == np.ndarray:
                     allowed_dtype = self._ns_specs['np_dtypes'][ns][key]
                     allowed_ndim = self._ns_specs['np_ndims'][ns][key]
