@@ -7,6 +7,7 @@ Functions for compiling C++ files to use in Python.
 
 import os
 import shutil
+import time
 import zipfile
 import urllib.request
 from subprocess import PIPE, run
@@ -194,6 +195,7 @@ def setup_autodiff(download=True,unzip=False,folder='cppfuncs/',do_print=False):
     shutil.move(src,dst)
 
     # d. clean
+    time.sleep(2)
     shutil.rmtree(f'{os.getcwd()}/{folder}/autodiff-main/')
 
     if do_print: print('autodiff succesfully installed')
@@ -231,6 +233,7 @@ def setup_Eigen(download=True,unzip=False,folder='cppfuncs/',do_print=False):
     shutil.move(src,dst)
 
     # d. clean
+    time.sleep(2)
     shutil.rmtree(f'{os.getcwd()}/{folder}/eigen-3.4.0')
 
     if do_print: print('Eigen succesfully installed')

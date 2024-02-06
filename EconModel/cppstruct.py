@@ -78,19 +78,19 @@ def get_fields(pythonobj,structname):
 
             assert hasattr(val,'dtype'), f'{key} is neither scalar nor np.array'
             
-            if val.dtype == np.int_:
+            if val.dtype in [int,np.int_,np.int64]:
 
                 ctlist.append((key,ct.POINTER(ct.c_long)))               
                 cttxt += f' int* {key};\n'
                 ctfunctxt_update('int*',key)
                      
-            elif val.dtype == np.float_:
+            elif val.dtype in [float,np.float_]:
             
                 ctlist.append((key,ct.POINTER(ct.c_double)))
                 cttxt += f' double* {key};\n'
                 ctfunctxt_update('double*',key)
 
-            elif val.dtype == np.bool_:
+            elif val.dtype in [bool,np.bool_]:
             
                 ctlist.append((key,ct.POINTER(ct.c_bool)))
                 cttxt += f' bool* {key};\n'
