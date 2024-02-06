@@ -282,7 +282,7 @@ def set_default_options(options):
                 e.g. C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/)
             intel_path (str): path to intel compiler
             flags (list[str]): list of flags (default is None)
-                vs if None: /LD /EHsc /Ox /openmp
+                vs if None: /LD /EHsc /O2 /openmp
                 intel if None: /LD /EHsc /O3 /openmp
             nlopt_lib (str): path to NLopt library 
                 (included if exists, default is cppfuncs/nlopt-2.4.2-dll64/libnlopt-0.lib)
@@ -364,7 +364,7 @@ def compile(filename,options=None,do_print=False):
         version_str = 'call vcvarsall.bat x64\n'
         
         compile_str = f'cl'
-        flags = '/LD /EHsc /Ox /openmp' if flags is None else flags
+        flags = '/LD /EHsc /O2 /openmp' if flags is None else flags
         compile_str += f' {flags} {filename} {libs} {add_macros(macros)}\n' 
 
         lines = [path_str,version_str,pwd_str,compile_str]
