@@ -57,7 +57,7 @@ def get_fields(pythonobj,structname):
                 cttxt += f' long long {key};\n'
                 ctfunctxt_update('long long',key)
 
-            elif type(val) in [float,np.float_]:
+            elif type(val) in [float,np.float64]:
             
                 ctlist.append((key,ct.c_double))          
                 cttxt += f' double {key};\n'
@@ -90,7 +90,7 @@ def get_fields(pythonobj,structname):
                 cttxt += f' int* {key};\n'
                 ctfunctxt_update('int*',key)
                      
-            elif val.dtype in [float,np.float_]:
+            elif val.dtype in [float,np.float64]:
             
                 ctlist.append((key,ct.POINTER(ct.c_double)))
                 cttxt += f' double* {key};\n'
@@ -225,7 +225,7 @@ def get_pointers(pythonobj,ctstruct):
 
         elif isinstance(field[1](),ct.POINTER(ct.c_double)):
 
-            assert np.issubdtype(val.dtype, np.float_), f'field = {field}'
+            assert np.issubdtype(val.dtype, np.float64), f'field = {field}'
             setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1]))
             # why [0:1]? hack to avoid bug for arrays with more elements than highest int32
         

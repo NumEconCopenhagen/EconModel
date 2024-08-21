@@ -195,7 +195,7 @@ def setup_autodiff(download=True,unzip=False,folder='cppfuncs/',do_print=False):
     shutil.move(src,dst)
 
     # d. clean
-    time.sleep(2)
+    time.sleep(5)
     shutil.rmtree(f'{os.getcwd()}/{folder}/autodiff-main/')
 
     if do_print: print('autodiff succesfully installed')
@@ -304,7 +304,7 @@ def set_default_options(options):
     else:
         options.setdefault('vs_path',None)
 
-    options.setdefault('intel_path','C:\Program Files (x86)\Intel\oneAPI')
+    options.setdefault('intel_path','C:/Program Files (x86)/Intel/oneAPI')
 
     options.setdefault('flags',None)
     options.setdefault('nlopt_lib','cppfuncs/nlopt-2.4.2-dll64/libnlopt-0.lib')

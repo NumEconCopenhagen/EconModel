@@ -123,8 +123,8 @@ class EconModelClass():
         def create_type_list(value):
 
             type_ = type(value)
-            if type_ in [float,np.float_]:
-                return [float,np.float_]
+            if type_ in [float,np.float64]:
+                return [float,np.float64]
             elif type_ in [int,np.int_]:
                 return [int,np.int_]                
             else:
