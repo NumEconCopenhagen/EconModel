@@ -66,13 +66,15 @@ class EconModelClass():
             assert hasattr(self,'setup'), 'the model must have defined an .setup() method'
             self.setup()
 
+            assert hasattr(self,'allocate'), 'the model must have defined an .allocate() method'
+            
             if load:
                 
                 # iv. create
                 self.allocate()
                 
                 # v. overwrite
-                self.load(skip=skip)
+                self.__load(skip=skip)
 
                 # vi. update par
                 self.__update(kwargs)
@@ -83,12 +85,15 @@ class EconModelClass():
                 self.__update(kwargs,allow_new_keys=True)
                 
                 # vi. allocate
-                assert hasattr(self,'allocate'), 'the model must have defined an .allocate() method'
                 self.allocate()
 
         else:
             
+            # i. create
             self.from_dict(from_dict)
+
+            # vi. update par
+            self.__update(kwargs)            
 
         # c. infrastructure
         self.infer_types()
@@ -190,6 +195,7 @@ class EconModelClass():
 
         self.namespaces = model_dict['namespaces']
         self.other_attrs = model_dict['other_attrs']
+
         for attr in self.__all_attrs():
             if attr in model_dict:
                 if do_copy:
@@ -202,6 +208,8 @@ class EconModelClass():
                 else:
                     setattr(self,attr,model_dict[attr])
 
+        self.infer_types()
+            
         if model_dict['link_to_cpp']: 
             self.link_to_cpp(force_compile=False)
         else:
@@ -223,7 +231,7 @@ class EconModelClass():
         with open(f'{self.savefolder}/{self.name}.p', 'wb') as f:
             pickle.dump(model_dict, f)
 
-    def load(self,skip=None):
+    def __load(self,skip=None):
         """ load the model """
 
         # a. load
