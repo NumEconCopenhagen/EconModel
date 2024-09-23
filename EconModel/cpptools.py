@@ -213,9 +213,9 @@ class link_to_cpp():
         if do_print: print('### compiling and linking ###\n')
 
         if 'dllfilename' in self.options and (not self.options['dllfilename'] is None):
-            self.dllfilename = f'{os.getcwd()}\{self.options["dllfilename"]}'
+            self.dllfilename = f'{os.getcwd()}/{self.options["dllfilename"]}'
         else:
-            self.dllfilename = f'{os.getcwd()}\{self.filename_raw}.dll'
+            self.dllfilename = f'{os.getcwd()}/{self.filename_raw}.dll'
 
         if not 'nlopt_lib' in self.options:
             self.options['nlopt_lib'] = f'{self.dirname}/nlopt-2.4.2-dll64/libnlopt-0.lib'

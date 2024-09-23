@@ -33,7 +33,7 @@ def get_fields(pythonobj,structname):
         
         if not typename in ctfunctxt:
 
-            typename_p = typename.replace('*','_p')
+            typename_p = typename.replace('*','_p').replace(' ','_')
             ctfunctxt[typename] = f'{typename} get_{typename_p}_{structname}'
             ctfunctxt[typename] += f'({structname}* x, char* name){{\n\n'
 
@@ -51,7 +51,13 @@ def get_fields(pythonobj,structname):
                 cttxt += f' int {key};\n'
                 ctfunctxt_update('int',key)
         
-            elif type(val) in [float,np.float_]:
+            elif type(val) in [np.int64]:
+        
+                ctlist.append((key,ct.c_longlong))
+                cttxt += f' long long {key};\n'
+                ctfunctxt_update('long long',key)
+
+            elif type(val) in [float,np.float64]:
             
                 ctlist.append((key,ct.c_double))          
                 cttxt += f' double {key};\n'
@@ -84,7 +90,7 @@ def get_fields(pythonobj,structname):
                 cttxt += f' int* {key};\n'
                 ctfunctxt_update('int*',key)
                      
-            elif val.dtype in [float,np.float_]:
+            elif val.dtype in [float,np.float64]:
             
                 ctlist.append((key,ct.POINTER(ct.c_double)))
                 cttxt += f' double* {key};\n'
@@ -104,6 +110,8 @@ def get_fields(pythonobj,structname):
     for typename in ctfunctxt.keys():
 
         if typename == 'int':
+            ctfunctxt[typename] += ' {return -9999;}\n\n}\n' # for catching errors
+        elif typename == 'long long':
             ctfunctxt[typename] += ' {return -9999;}\n\n}\n' # for catching errors
         elif typename == 'double':
             ctfunctxt[typename] += ' {return NAN;}\n\n}\n'
@@ -189,36 +197,50 @@ def get_pointers(pythonobj,ctstruct):
         val = getattr(pythonobj,key)
        
         if isinstance(field[1](),ct.c_long):
+
             try:
                 setattr(p_ctstruct,key,val)
             except:
                 raise Exception(f'{key} is not an integer')
 
+        elif isinstance(field[1](),ct.c_longlong):
+
+            try:
+                setattr(p_ctstruct,key,val)
+            except:
+                raise Exception(f'{key} is not an 64-bit integer')
+            
         elif isinstance(field[1](),ct.POINTER(ct.c_long)):
+
             assert np.issubdtype(val.dtype, np.int_), f'field = {field}'
             setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1])) 
             # why [0:1]? hack to avoid bug for arrays with more elements than highest int32
 
         elif isinstance(field[1](),ct.c_double):
+
             try:
                 setattr(p_ctstruct,key,val)   
             except:
                 raise Exception(f'{key} is not a floating point')
 
         elif isinstance(field[1](),ct.POINTER(ct.c_double)):
-            assert np.issubdtype(val.dtype, np.float_), f'field = {field}'
+
+            assert np.issubdtype(val.dtype, np.float64), f'field = {field}'
             setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1]))
             # why [0:1]? hack to avoid bug for arrays with more elements than highest int32
         
         elif isinstance(field[1](),ct.c_bool):
+
             setattr(p_ctstruct,key,val)
 
         elif isinstance(field[1](),ct.POINTER(ct.c_bool)):
+
             assert np.issubdtype(val.dtype, np.bool_), f'field = {field}'
             setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1]))
             # why [0:1]? hack to avoid bug for arrays with more elements than highest int32            
         
         elif isinstance(field[1](),ct.c_char_p):
+
             assert type(val) is str, f'field = {field}'
             setattr(p_ctstruct,key,val.encode())
 
