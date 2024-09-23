@@ -321,19 +321,31 @@ class link_to_cpp():
 
         """
 
-        if cppfile is None: cppfile = self.cppfile
 
-        # a. get handle
-        handle = cppfile._handle
-    
-        # b. delete linking variable
-        del cppfile
+        if cppfile is None: 
+            in_self = True
+            cppfile = self.cppfile
+        else:
+            in_self = False
 
-        # c. free handle
-        ct.windll.kernel32.FreeLibrary.argtypes = [ct.wintypes.HMODULE]
-        ct.windll.kernel32.FreeLibrary(handle)
+        if cppfile is None:
+            
+            if do_print: print('no C++ files not linked')
+
+        else:
+
+            # a. get handle
+            handle = cppfile._handle
         
-        if do_print: print('C++ files delinked')
+            # b. delete linking variable
+            del cppfile
+            if in_self: self.cppfile = None
+
+            # c. free handle
+            ct.windll.kernel32.FreeLibrary.argtypes = [ct.wintypes.HMODULE]
+            ct.windll.kernel32.FreeLibrary(handle)
+            
+            if do_print: print('C++ files delinked')
 
     def recompile(self,force_compile=True,use_log=True,print_log=True,do_print=False):
         """ re-compile and link to C++ file
