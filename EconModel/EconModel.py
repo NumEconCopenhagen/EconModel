@@ -19,17 +19,18 @@ from .cpptools import link_to_cpp
 # main
 class EconModelClass():
     
-    def __init__(self,name='',load=False,from_dict=None,skip=None,**kwargs):
+    def __init__(self,name='',load=False,from_dict=None,skip=None,jit=True,**kwargs):
         """ defines default attributes """
 
         if load: assert from_dict is None, 'dictionary should be be specified when loading'
 
         # a. name
         self.name = name
+        self.jit = jit
 
         # list of internal of attributes (used when saving)
         self.internal_attrs = [
-            'savefolder','namespaces','other_attrs',
+            'savefolder','namespaces','other_attrs','jit'
             'cpp_filename','cpp_options','cpp_structsmap']
 
         # b. new or load
@@ -137,7 +138,7 @@ class EconModelClass():
 
         for ns in self.namespaces:
             ns_dict = getattr(self,ns).__dict__
-            _ns_namedtuple[ns] = namedtuple(f'{ns.capitalize()}Class',[key for key in ns_dict.keys()])
+            if self.jit: _ns_namedtuple[ns] = namedtuple(f'{ns.capitalize()}Class',[key for key in ns_dict.keys()])
             _ns_keys[ns] = [key for key in ns_dict.keys()]
             _ns_types[ns] = {key:create_type_list(value) for key,value in ns_dict.items()}
             _ns_np_dtypes[ns] = {key:value.dtype for key,value in ns_dict.items() if type(value) == np.ndarray}
@@ -166,7 +167,7 @@ class EconModelClass():
 
         self._ns_jit = {}
         for ns in self.namespaces:
-            self._ns_jit[ns] = self._ns_specs['namedtuple'][ns](**getattr(self,ns).__dict__)
+            if self.jit: self._ns_jit[ns] = self._ns_specs['namedtuple'][ns](**getattr(self,ns).__dict__)
 
     ####################
     ## save-copy-load ##

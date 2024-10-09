@@ -21,10 +21,11 @@ class jit():
         """ swap from normal namespaces to updated jitted namespaces """ 
 
         model = self.model
-        model.update_jit()
-        for ns in model.namespaces:
-            jit = model._ns_jit[ns]
-            setattr(model,ns,jit)
+        if model.jit:
+            model.update_jit()
+            for ns in model.namespaces:
+                jit = model._ns_jit[ns]
+                setattr(model,ns,jit)
 
         return model
   
@@ -35,11 +36,13 @@ class jit():
             traceback.print_exception(exc_type, exc_value, tb)
         
         model = self.model
-        for ns in model.namespaces:
-            normal = getattr(self,ns)
-            setattr(model,ns,normal)
-        
-        del model._ns_jit
+        if model.jit:
+
+            for ns in model.namespaces:
+                normal = getattr(self,ns)
+                setattr(model,ns,normal)
+            
+            del model._ns_jit
 
         if exc_type is None:
             return True
