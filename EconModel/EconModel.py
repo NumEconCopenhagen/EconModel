@@ -30,7 +30,7 @@ class EconModelClass():
 
         # list of internal of attributes (used when saving)
         self.internal_attrs = [
-            'savefolder','namespaces','other_attrs','jit'
+            'savefolder','namespaces','other_attrs','jit',
             'cpp_filename','cpp_options','cpp_structsmap']
 
         # b. new or load

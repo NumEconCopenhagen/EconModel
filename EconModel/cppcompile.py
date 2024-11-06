@@ -20,6 +20,7 @@ def find_vs_path():
     """ find path to visual studio """
 
     paths = [   
+        'C:/Program Files/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/',
         'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/'
     ]
 
