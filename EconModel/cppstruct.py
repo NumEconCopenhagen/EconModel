@@ -45,7 +45,7 @@ def get_fields(pythonobj,structname):
         # i. scalars
         if np.isscalar(val):
 
-            if type(val) in [int,np.int_]:
+            if type(val) in [int,np.int32]:
         
                 ctlist.append((key,ct.c_long))
                 cttxt += f' int {key};\n'
@@ -84,19 +84,25 @@ def get_fields(pythonobj,structname):
 
             assert hasattr(val,'dtype'), f'{key} is neither scalar nor np.array'
             
-            if val.dtype in [int,np.int_,np.int64]:
+            if val.dtype in [np.int32]:
 
                 ctlist.append((key,ct.POINTER(ct.c_long)))               
                 cttxt += f' int* {key};\n'
                 ctfunctxt_update('int*',key)
                      
-            elif val.dtype in [float,np.float64]:
+            elif val.dtype in [np.int64]:
+
+                ctlist.append((key,ct.POINTER(ct.c_longlong)))
+                cttxt += f' long long* {key};\n'
+                ctfunctxt_update('long long*',key)
+
+            elif val.dtype in [np.float64]:
             
                 ctlist.append((key,ct.POINTER(ct.c_double)))
                 cttxt += f' double* {key};\n'
                 ctfunctxt_update('double*',key)
 
-            elif val.dtype in [bool,np.bool_]:
+            elif val.dtype in [np.bool]:
             
                 ctlist.append((key,ct.POINTER(ct.c_bool)))
                 cttxt += f' bool* {key};\n'
@@ -121,6 +127,8 @@ def get_fields(pythonobj,structname):
             ctfunctxt[typename] += ' {return NULL;}\n\n}\n'
         elif typename == 'int*':
             ctfunctxt[typename] += ' {return NULL;}\n\n}\n'
+        elif typename == 'long long*':
+            ctfunctxt[typename] += ' {return NULL;}\n\n}\n'            
         elif typename == 'double*':
             ctfunctxt[typename] += ' {return NULL;}\n\n}\n'
         elif typename == 'bool*':
@@ -196,53 +204,61 @@ def get_pointers(pythonobj,ctstruct):
         key = field[0]                
         val = getattr(pythonobj,key)
        
-        if isinstance(field[1](),ct.c_long):
+        if isinstance(field[1](),ct.c_double):
 
             try:
-                setattr(p_ctstruct,key,val)
+                setattr(p_ctstruct,key,val)   
             except:
-                raise Exception(f'{key} is not an integer')
-
+                raise Exception(f'{key} is not a floating point')
+               
         elif isinstance(field[1](),ct.c_longlong):
 
             try:
                 setattr(p_ctstruct,key,val)
             except:
                 raise Exception(f'{key} is not an 64-bit integer')
-            
-        elif isinstance(field[1](),ct.POINTER(ct.c_long)):
-
-            assert np.issubdtype(val.dtype, np.int_), f'field = {field}'
-            setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1])) 
-            # why [0:1]? hack to avoid bug for arrays with more elements than highest int32
-
-        elif isinstance(field[1](),ct.c_double):
+               
+        elif isinstance(field[1](),ct.c_long):
 
             try:
-                setattr(p_ctstruct,key,val)   
+                setattr(p_ctstruct,key,val)
             except:
-                raise Exception(f'{key} is not a floating point')
+                raise Exception(f'{key} is not an integer')
+                    
+        elif isinstance(field[1](),ct.c_char_p):
+
+            assert type(val) is str, f'field = {field}'
+            setattr(p_ctstruct,key,val.encode())
+
+        elif isinstance(field[1](),ct.c_bool):
+
+            setattr(p_ctstruct,key,val)
 
         elif isinstance(field[1](),ct.POINTER(ct.c_double)):
 
             assert np.issubdtype(val.dtype, np.float64), f'field = {field}'
             setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1]))
             # why [0:1]? hack to avoid bug for arrays with more elements than highest int32
-        
-        elif isinstance(field[1](),ct.c_bool):
 
-            setattr(p_ctstruct,key,val)
+        elif isinstance(field[1](),ct.POINTER(ct.c_longlong)):
+
+            assert np.issubdtype(val.dtype, np.int64), f'field = {field}'
+            setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1])) 
+            # why [0:1]? hack to avoid bug for arrays with more elements than highest int32
+            
+        elif isinstance(field[1](),ct.POINTER(ct.c_long)):
+
+            assert np.issubdtype(val.dtype, np.int32), f'field = {field}'
+            setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1])) 
+            # why [0:1]? hack to avoid bug for arrays with more elements than highest int32
+      
 
         elif isinstance(field[1](),ct.POINTER(ct.c_bool)):
 
             assert np.issubdtype(val.dtype, np.bool_), f'field = {field}'
             setattr(p_ctstruct,key,np.ctypeslib.as_ctypes(val.ravel()[0:1]))
             # why [0:1]? hack to avoid bug for arrays with more elements than highest int32            
-        
-        elif isinstance(field[1](),ct.c_char_p):
 
-            assert type(val) is str, f'field = {field}'
-            setattr(p_ctstruct,key,val.encode())
 
         else:
 

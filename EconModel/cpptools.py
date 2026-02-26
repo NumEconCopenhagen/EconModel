@@ -10,7 +10,7 @@ import ctypes as ct
 import re
 import numpy as np
 
-from.cppcompile import setup_nlopt, setup_tasmanian, setup_alglib, setup_autodiff, setup_Eigen
+from.cppcompile import setup_nlopt, setup_tasmanian, setup_alglib, setup_Eigen
 
 from .cppcompile import compile, set_default_options
 from .cppstruct import setup_struct, get_struct_pointer
@@ -73,8 +73,8 @@ def analyze_cpp(funcs,filename,structnames=[],do_print=False):
     if do_print: print(f'### analyzing {filename} ###\n')
 
     # a. allowed types
-    all_restypes = ['void','double','int','bool','void*']
-    all_argtypes = ['double*','double','int*','int','bool*','bool','char*','char','void*'] 
+    all_restypes = ['void','double','long long','int','bool','void*']
+    all_argtypes = ['double*','double','longlong*','longlong','int*','int','char*','char','bool*','bool','void*'] 
     all_argtypes += [f'{structname}*' for structname in structnames]
 
     # b. retrieve code
@@ -83,7 +83,8 @@ def analyze_cpp(funcs,filename,structnames=[],do_print=False):
     # c. rough cleaning
     code = code.replace('\n','')
     code = code.replace('#define EXPORT extern "C" __declspec(dllexport)','')
-    code = re.sub(r'\/\*.*?\*\/',' ',code)
+    code = re.sub(r'\/\*.*?\*\/',' ',code) # remove comments
+    code = re.sub(r'long\s*long', 'longlong', code)
 
     # d. loop through all functions
     func_strs = re.findall(r'EXPORT.*?\(.*?\)',code)
@@ -119,6 +120,8 @@ def analyze_cpp(funcs,filename,structnames=[],do_print=False):
         # iv. chekcs
         return_check = (restype in all_restypes)
         arg_check = all([ (argtype in all_argtypes or argtype is None) for argtype in argtypes])
+        argtypes = [argtype.replace('longlong','long long') for argtype in argtypes]
+        restype = restype.replace('longlong','long long')
 
         if (not return_check) or (not arg_check) or do_print:
 
@@ -272,18 +275,22 @@ class link_to_cpp():
 
                 if (argtype_raw_struct := argtype_raw.replace('*','')) in self.structs:
                     argtype = ct.POINTER(self.structs[argtype_raw_struct])
-                elif argtype_raw == 'int*':
-                    argtype = ct.POINTER(ct.c_long)
                 elif argtype_raw == 'double*':
                     argtype = ct.POINTER(ct.c_double)
-                elif argtype_raw == 'int':
-                    argtype = ct.c_long
+                elif argtype_raw == 'long long*':
+                    argtype = ct.POINTER(ct.c_longlong)                    
+                elif argtype_raw == 'int*':
+                    argtype = ct.POINTER(ct.c_long)
                 elif argtype_raw == 'double':
                     argtype = ct.c_double
-                elif argtype_raw == 'bool':
-                    argtype = ct.c_bool
+                elif argtype_raw == 'long long':
+                    argtype = ct.c_longlong
+                elif argtype_raw == 'int':
+                    argtype = ct.c_long
                 elif argtype_raw == 'char*':
                     argtype = ct.c_char_p
+                elif argtype_raw == 'bool':
+                    argtype = ct.c_bool
                 elif argtype_raw == 'void*':
                     argtype = ct.c_void_p                                 
                 else:
@@ -294,10 +301,12 @@ class link_to_cpp():
             # b. return
             if restype_raw == 'void':
                 restype = None
-            elif restype_raw == 'int':
-                restype = ct.c_long
             elif restype_raw == 'double':
                 restype = ct.c_double
+            elif restype_raw == 'long long':
+                restype = ct.c_longlong
+            elif restype_raw == 'int':
+                restype = ct.c_long
             elif restype_raw == 'bool':
                 restype = ct.c_bool
             elif restype_raw == 'void*':
@@ -372,14 +381,18 @@ class link_to_cpp():
 
         p_args = []
 
+        if not len(args) == len(self.funcs[funcname][0]):
+            raise Exception(f'number of arguments {len(args)} does not match number of argument types {len(self.funcs[funcname][0])} for function {funcname}')
+
         argtypes_raw,_restype_raw = self.funcs[funcname]
+
         for arg,argtype_raw in zip(args,argtypes_raw):
 
             if (argtype_raw_struct := argtype_raw.replace('*','')) in self.structs:
                 p_arg = get_struct_pointer(arg,self.structs[argtype_raw_struct])
-            elif argtype_raw in ['int*','double*','bool*']:
+            elif argtype_raw in ['long long*','double*','int*','bool*']:
                 p_arg = np.ctypeslib.as_ctypes(arg.ravel())
-            elif argtype_raw in ['double','int','bool']:
+            elif argtype_raw in ['long long','double','int','bool']:
                 p_arg = arg
             elif argtype_raw == 'char*':
                 p_arg = arg.encode()
@@ -402,7 +415,7 @@ class link_to_cpp():
 
         Returns
 
-            (None/int/double/bool): return of function
+            (None/long long/double/double/bool): return of function
 
         """
         
@@ -418,7 +431,7 @@ class link_to_cpp():
             except Exception as e:
 
                 if n == 0: self.compile(force_compile=False) # re-linking might solve the problem
-                if n == 1: print(e) # print error message
+                if n == 1: raise RuntimeError(e) # print error message
 
         # print log
         if self.use_log:

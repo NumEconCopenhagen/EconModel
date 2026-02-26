@@ -21,7 +21,8 @@ def find_vs_path():
 
     paths = [   
         'C:/Program Files/Microsoft Visual Studio/2019/Community/VC/Auxiliary/Build/',
-        'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/'
+        'C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Auxiliary/Build/',
+        'C:/Program Files/Microsoft Visual Studio/18/Community/VC/Auxiliary/Build',
     ]
 
     for path in paths: 
@@ -163,46 +164,8 @@ def setup_alglib(download=True,unzip=False,folder='cppfuncs/',do_print=False):
 
     if do_print: print('alglib succesfully installed')
 
-def setup_autodiff(download=True,unzip=False,folder='cppfuncs/',do_print=False):
-    """download and setup autodiff
-
-    Args:
-
-        download (bool,optional): download autodiff
-        unzip (bool,optional): unzip even if not downloaded
-        folder (str,optional): folder to put autodiff to
-        do_print (bool,optional): print progress
-
-    """
-
-    if os.path.isdir(f'{os.getcwd()}/{folder}autodiff'):
-        if do_print: print('autodiff already installed')
-        return
-
-    # a. download
-    zipfilename = os.path.abspath(f'{os.getcwd()}/{folder}autodiff-main.zip')
-    if download:
-        url = 'https://github.com/autodiff/autodiff/archive/refs/heads/main.zip'
-        urllib.request.urlretrieve(url,zipfilename)
-        
-    # b. unzip
-    if download or unzip:
-        with zipfile.ZipFile(zipfilename) as file:
-            file.extractall(f'{os.getcwd()}/{folder}')
-        
-    # c. move
-    src = f'{os.getcwd()}/{folder}/autodiff-main/autodiff'
-    dst = f'{os.getcwd()}/{folder}/autodiff'
-    shutil.move(src,dst)
-
-    # d. clean
-    time.sleep(5)
-    shutil.rmtree(f'{os.getcwd()}/{folder}/autodiff-main/')
-
-    if do_print: print('autodiff succesfully installed')
-
 def setup_Eigen(download=True,unzip=False,folder='cppfuncs/',do_print=False):
-    """download and setup autodiff
+    """download and setup Eigen
 
     Args:
 
